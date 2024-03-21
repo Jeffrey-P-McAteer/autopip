@@ -5,7 +5,7 @@
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 shopt -s expand_aliases
-
+set -e
 
 # IMPORTANT: make sure dotnet is present in PATH before the next lines
 
@@ -13,7 +13,7 @@ shopt -s expand_aliases
 
 DOTNETDIR=$(dirname $(dirname $(dotnet --info | grep "Base Path" | cut -d' ' -f 6)))
 CSCPATH=$(find $DOTNETDIR -name csc.dll -print | sort | tail -n1)
-NETSTANDARDPATH=$(find $DOTNETDIR -path *sdk/*/ref/netstandard.dll ! -path *NuGetFallback* -print | sort | tail -n1)
+NETSTANDARDPATH=$(find $DOTNETDIR -path '*sdk/*/ref/netstandard.dll' '!' -path '*NuGetFallback*' -print | sort | tail -n1)
 
 alias csc='dotnet $CSCPATH /r:$NETSTANDARDPATH '
 

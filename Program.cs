@@ -1,12 +1,18 @@
 using System;
+using System.Diagnostics;
 
-namespace HelloWorld
+namespace AutoPip
 {
     class Program
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello, World!");
+            ProcessStartInfo psi = new ProcessStartInfo("python");
+            // psi.ArgumentList.Add("chaos.py");
+            psi.Arguments = "chaos.py";
+
+            var p = Process.Start(psi);
+            p.WaitForExit();
         }
     }
 }

@@ -3,4 +3,11 @@ bin
 out
 __pycache__
 *.pyc
+*site-packages/
+site-packages
+*site-packages
+
+test.png
+
+
 
