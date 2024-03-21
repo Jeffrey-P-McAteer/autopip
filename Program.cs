@@ -49,7 +49,7 @@ class AutoPipMetaFinder(importlib.abc.MetaPathFinder):
     # Some python libs do a try/except to see what's available, and it's good to not
     # dynamically install those libraries (like _decimal)
     stack = traceback.extract_stack(limit=48)
-    line_called_from = traceback.format_list(stack)[0].split('\n')[1].strip()
+    line_called_from = (traceback.format_list(stack)[0].split('\n')+['',''])[1].strip()
 
     # print(f'line_called_from = {line_called_from}')
 
