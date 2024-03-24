@@ -10,14 +10,17 @@ import traceback
 file_name = os.environ.get('PATH_TO_MAPPED_FILE', '/tmp/ipc.bin')
 print(f'Serving function calls sent to {file_name}')
 
+
 MAP_SIZE = 16 * 1024
 last_fn_nonce = 0
-with open(file_name, 'ab+') as fd:
-  fd.seek(0)
+
+# Zero file in write mode
+with open(file_name, 'wb+') as fd:
   fd.write(b'\x00' * MAP_SIZE )
   fd.flush()
-  fd.seek(0)
 
+# Open in "append mode" and pass to mmap
+with open(file_name, 'ab+') as fd:
   mm = mmap.mmap(fd.fileno(), MAP_SIZE)
 
   while True:
