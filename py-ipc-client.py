@@ -4,6 +4,7 @@ import sys
 import mmap
 import threading
 import time
+import struct
 
 def run_ipc_func(fn_name, *args):
   file_name = os.environ.get('PATH_TO_MAPPED_FILE', '/tmp/ipc.bin')
