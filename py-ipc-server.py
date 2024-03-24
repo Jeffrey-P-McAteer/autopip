@@ -66,7 +66,8 @@ with open(file_name, 'ab+') as fd:
       mm_struct.fn_args = b'\x00' * (8 * 1024)
 
       # Finally indicate return data has been written
-      mm_struct.message_num = (mm_struct.message_num + 1) % 1024
+      last_fn_nonce = (mm_struct.message_num + 1) % 1024
+      mm_struct.message_num = last_fn_nonce
 
     except:
       traceback.print_exc()
@@ -80,7 +81,8 @@ with open(file_name, 'ab+') as fd:
       mm_struct.return_items = b'\x00' * 8 * 1024
 
       # Remember to increment anyway so other process does not halt
-      mm_struct.message_num = (mm_struct.message_num + 1) % 1024
+      last_fn_nonce = (mm_struct.message_num + 1) % 1024
+      mm_struct.message_num = last_fn_nonce
 
 
 
