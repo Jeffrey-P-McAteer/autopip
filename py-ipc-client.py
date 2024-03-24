@@ -4,9 +4,19 @@ import sys
 import mmap
 import threading
 import time
-import struct
+import ctypes
 
-MAP_SIZE = 16 * 1024
+# This structure MUST be identical across sending + recieving processes
+class SharedStruct(ctypes.Structure):
+    _pack_ = 4
+    _fields_ = [
+        ('message_num', ctypes.c_uint), # Both sides must increment message_num, on fn call + on fn return
+        ('fn_name', ctypes.c_char * 128 ),              # Up to 128 chars func name
+        ('fn_args', ctypes.c_char * (8 * 1024) ),       # Pass up to 8kb of arguments, which will be interpreted as into a list of N \x00-terminated strings
+        ('return_items', ctypes.c_char * (8 * 1024) ),  # Return up to 8kb, which will be interpreted as into a list of N \x00-terminated strings
+    ]
+
+MAP_SIZE = ctypes.sizeof(SharedStruct)
 
 def run_ipc_func(fn_name, *args):
   file_name = os.environ.get('PATH_TO_MAPPED_FILE', '/tmp/ipc.bin')
@@ -14,11 +24,21 @@ def run_ipc_func(fn_name, *args):
     raise Exception(f'{file_name} does not exist!')
   with open(file_name, 'ab+') as fd:
     mm = mmap.mmap(fd.fileno(), MAP_SIZE)
+    mm_struct = SharedStruct.from_buffer(mm)
 
-    # TODO write func name + arguments
+    mm_struct.fn_name = fn_name.encode('utf-8')
+    # TODO \x00-join
+    mm_struct.fn_args = (' '.join([str(x) for x in args])).encode('utf-8')
 
-    # Increase nonce after writing func call data
-    mm[0] = (int(mm[0]) + 1) % 255
+    # Inform server func is available
+    our_nonce = (mm_struct.message_num + 1) % 1024
+    mm_struct.message_num = our_nonce
+    while mm_struct.message_num == our_nonce:
+      time.sleep(0.05)
+
+    # TODO parse
+    return mm_struct.return_items.decode('utf-8')
+
 
 
 r = run_ipc_func('http_get', 'http://example.org')
