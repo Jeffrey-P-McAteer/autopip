@@ -10,11 +10,17 @@ import ctypes
 class SharedStruct(ctypes.Structure):
     _pack_ = 4
     _fields_ = [
-        ('message_num', ctypes.c_uint), # Both sides must increment message_num, on fn call + on fn return
-        ('fn_name', ctypes.c_char * 128 ),              # Up to 128 chars func name
-        ('fn_args', ctypes.c_char * (8 * 1024) ),       # Pass up to 8kb of arguments, which will be interpreted as into a list of N \x00-terminated strings
-        ('return_items', ctypes.c_char * (8 * 1024) ),  # Return up to 8kb, which will be interpreted as into a list of N \x00-terminated strings
+        ('message_num',  ctypes.c_uint), # Both sides must increment message_num, on fn call + on fn return
+        ('fn_name',      ctypes.c_char * 128 ),              # Up to 128 chars func name
+        ('fn_args',      ctypes.c_char * (16 * 1024) ),      # Pass up to 16kb of arguments, which will be interpreted as into a list of N \x00-terminated strings
+        ('return_items', ctypes.c_char * (128 * 1024 * 1024) ),  # Return up to 128mb, which will be interpreted as into a list of N \x00-terminated strings
     ]
+
+    def field_size(self, field_name):
+      for f_name, field_type in self._fields_:
+        if f_name == field_name:
+          return ctypes.sizeof(field_type)
+      raise Exception(f'Cannot find field {field_name}!')
 
 MAP_SIZE = ctypes.sizeof(SharedStruct)
 
@@ -46,7 +52,7 @@ r = run_ipc_func('http_get', 'http://example.org')
 print(f'r = {r}')
 
 
-r = run_ipc_func('http_get', 'http://1.1.1.1')
+r = run_ipc_func('http_get', 'http://ifconfig.me')
 
 print(f'r = {r}')
 

@@ -19,10 +19,10 @@ print(f'Serving function calls sent to {file_name}')
 class SharedStruct(ctypes.Structure):
     _pack_ = 4
     _fields_ = [
-        ('message_num', ctypes.c_uint), # Both sides must increment message_num, on fn call + on fn return
-        ('fn_name', ctypes.c_char * 128 ),              # Up to 128 chars func name
-        ('fn_args', ctypes.c_char * (8 * 1024) ),       # Pass up to 8kb of arguments, which will be interpreted as into a list of N \x00-terminated strings
-        ('return_items', ctypes.c_char * (8 * 1024) ),  # Return up to 8kb, which will be interpreted as into a list of N \x00-terminated strings
+        ('message_num',  ctypes.c_uint), # Both sides must increment message_num, on fn call + on fn return
+        ('fn_name',      ctypes.c_char * 128 ),              # Up to 128 chars func name
+        ('fn_args',      ctypes.c_char * (16 * 1024) ),      # Pass up to 16kb of arguments, which will be interpreted as into a list of N \x00-terminated strings
+        ('return_items', ctypes.c_char * (128 * 1024 * 1024) ),  # Return up to 128mb, which will be interpreted as into a list of N \x00-terminated strings
     ]
 
     def field_size(self, field_name):
@@ -35,6 +35,7 @@ class SharedStruct(ctypes.Structure):
 def http_get(url_s):
   if not isinstance(url_s, str):
     url_s = url_s.decode('utf-8')
+  print(f'http_get("{url_s}")')
   with urllib.request.urlopen(url_s) as response:
     return response.read()
 
@@ -67,10 +68,22 @@ with open(file_name, 'ab+') as fd:
         if len(args_byte_s) > 0:
           fn_args_arr.append( args_byte_s.decode('utf-8') )
 
-      if mm_struct.fn_name.decode("utf-8") == 'http_get':
-        mm_struct.return_items = http_get(*fn_args_arr)[0:mm_struct.field_size('return_items')]
+      fn_name_s = mm_struct.fn_name.decode("utf-8")
+      return_val = []
+      if fn_name_s in locals():
+        return_val = locals()[fn_name_s](*fn_args_arr)
+      elif fn_name_s in globals():
+        return_val = globals()[fn_name_s](*fn_args_arr)
       else:
         mm_struct.return_items = b'\x00' * mm_struct.field_size('return_items')
+
+      if isinstance(return_val, list):
+        mm_struct.return_items = (b'\x00'.join([ str(x).encode('utf-8') for x in return_val ]))[0:mm_struct.field_size('return_items')]
+      elif isinstance(return_val, str):
+        mm_struct.return_items = return_val.encode('utf-8')[0:mm_struct.field_size('return_items')]
+      elif isinstance(return_val, bytes):
+        mm_struct.return_items = return_val[0:mm_struct.field_size('return_items')]
+
 
       # Clear input values
       mm_struct.fn_name = b'\x00' * mm_struct.field_size('fn_name')
