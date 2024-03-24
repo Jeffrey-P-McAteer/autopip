@@ -25,11 +25,17 @@ class SharedStruct(ctypes.Structure):
         ('return_items', ctypes.c_char * (8 * 1024) ),  # Return up to 8kb, which will be interpreted as into a list of N \x00-terminated strings
     ]
 
+    def field_size(self, field_name):
+      for f_name, field_type in self._fields_:
+        if f_name == field_name:
+          return ctypes.sizeof(field_type)
+      raise Exception(f'Cannot find field {field_name}!')
 
-def http_get(arg):
-  if not isinstance(arg, str):
-    arg = arg.decode('utf-8')
-  with urllib.request.urlopen(arg) as response:
+
+def http_get(url_s):
+  if not isinstance(url_s, str):
+    url_s = url_s.decode('utf-8')
+  with urllib.request.urlopen(url_s) as response:
     return response.read()
 
 
@@ -56,14 +62,19 @@ with open(file_name, 'ab+') as fd:
       print(f'  fn_args = {mm_struct.fn_args}')
       # print(f'  return_items = {mm_struct.return_items}')
 
+      fn_args_arr = []
+      for args_byte_s in mm_struct.fn_args.split(b'\x00'):
+        if len(args_byte_s) > 0:
+          fn_args_arr.append( args_byte_s.decode('utf-8') )
+
       if mm_struct.fn_name.decode("utf-8") == 'http_get':
-        mm_struct.return_items = http_get(mm_struct.fn_args)[0:8 * 1024]
+        mm_struct.return_items = http_get(*fn_args_arr)[0:mm_struct.field_size('return_items')]
       else:
-        mm_struct.return_items = b'\x00' * 8 * 1024
+        mm_struct.return_items = b'\x00' * mm_struct.field_size('return_items')
 
       # Clear input values
-      mm_struct.fn_name = b'\x00' * 128
-      mm_struct.fn_args = b'\x00' * (8 * 1024)
+      mm_struct.fn_name = b'\x00' * mm_struct.field_size('fn_name')
+      mm_struct.fn_args = b'\x00' * mm_struct.field_size('fn_args')
 
       # Finally indicate return data has been written
       last_fn_nonce = (mm_struct.message_num + 1) % 1024
@@ -76,9 +87,9 @@ with open(file_name, 'ab+') as fd:
       time.sleep(1)
 
       # Clear _all_ values on exception!
-      mm_struct.fn_name = b'\x00' * 128
-      mm_struct.fn_args = b'\x00' * (8 * 1024)
-      mm_struct.return_items = b'\x00' * 8 * 1024
+      mm_struct.fn_name = b'\x00' * mm_struct.field_size('fn_name')
+      mm_struct.fn_args = b'\x00' * mm_struct.field_size('fn_args')
+      mm_struct.return_items = b'\x00' * mm_struct.field_size('return_items')
 
       # Remember to increment anyway so other process does not halt
       last_fn_nonce = (mm_struct.message_num + 1) % 1024
