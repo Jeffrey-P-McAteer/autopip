@@ -31,3 +31,10 @@ from PIL import Image # pillow
 
 print(f'PIL.Image = {Image}')
 
+
+import requests
+
+some_resp = requests.get('http://api.nbp.pl/api/exchangerates/rates/A/USD?format=json').json()
+print(f'some_resp = {some_resp}')
+
+

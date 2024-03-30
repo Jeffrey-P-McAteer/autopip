@@ -19,6 +19,21 @@ import subprocess
 import tempfile
 import traceback
 
+# Define some custom package -> function overloads;
+# upon import of the package, we do normal pip install but then
+# add / overwrite the listed functions / types.
+
+def requests_get(*args, **kwargs):
+
+
+OVERRIDE_DICT = {
+  'requests': {
+    'get':
+  }
+}
+
+
+
 # Does not load packages; instead, we install this as the first
 # item in sys.meta_path and we install everything that
 # can't be loaded using importlib.import_module() - careful of the recursion!
