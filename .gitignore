@@ -12,3 +12,7 @@ test.png
 
 *.s
 
+*.pyd
+*.so
+build/*
+build
