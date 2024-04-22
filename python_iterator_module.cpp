@@ -1,6 +1,8 @@
 
 // Compiled by "python setup.py build_ext --inplace"
 
+// Allows us to support python 3.6+. No sense going older than 3.6.
+#define Py_LIMITED_API 0x03060000
 
 
 #define PY_SSIZE_T_CLEAN
